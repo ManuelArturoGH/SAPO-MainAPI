@@ -96,3 +96,151 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Arquitectura Hexagonal (Aplicada en este proyecto)
+
+La API sigue una separación clara de capas para favorecer mantenibilidad y testeo:
+
+- Dominio: entidades y contratos (`employee/domain`). No depende de Nest ni de Mongo.
+- Aplicación: casos de uso (`employee/application`). Orquestan lógica y dependen sólo de interfaces.
+- Infraestructura: implementaciones externas (controladores HTTP, repositorios Mongo, DTOs) en `employee/infrastructure`.
+- Módulo de composición: `employee/employee.module.ts` une casos de uso con la implementación concreta del repositorio.
+- Cross-cutting: conexión a base de datos en `database/mongodb.ts` y ciclo de vida en `appLifecycle.ts`.
+
+### Flujo de una petición
+1. Controller recibe DTO validado (ValidationPipe global).
+2. Convierte DTO -> Entidad de dominio (`Employee.createNew`).
+3. Caso de uso invoca interfaz `EmployeeRepository`.
+4. Provider Nest resuelve `MongoDBRepository` (o un mock en tests e2e) y ejecuta la operación.
+5. El controller transforma la Entidad a respuesta JSON plana.
+
+### Conexión a Mongo
+La conexión se abre una sola vez (pool) mediante `connectMongo()` y se reutiliza. Se cierra limpiamente en `onApplicationShutdown` (clase `AppLifecycle`). Esto evita costos de reconexión y es el patrón recomendado.
+
+Si requieres transacciones multi-documento (Replica Set): usa `runTransaction(async (session, db) => { ... })`. Para operaciones simples (insert/find) no es necesario.
+
+## Tests
+
+### Unit Tests
+Ejecutan casos de uso aislados con repositorios en memoria/fakes.
+```bash
+npm run test
+```
+
+### E2E Tests (Repositorio en memoria)
+No tocan Mongo real: se sobreescribe el provider `EmployeeRepository` con una clase in-memory.
+```bash
+npm run test:e2e
+```
+
+### Cobertura
+```bash
+npm run test:cov
+```
+
+### Añadir nuevos casos de uso
+1. Crear archivo en `employee/application` (e.g. `updateEmployeeUseCase.ts`).
+2. Añadir provider al arreglo `providers` del `EmployeeModule`.
+3. Crear interfaz/método necesario en `employee/domain/interfaces`.
+4. Implementar operación en `MongoDBRepository`.
+5. Añadir tests unitarios + (opcional) e2e usando in-memory repo.
+
+## Variables de Entorno
+Coloca un `.env` con, por ejemplo:
+```
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB=sapo
+```
+
+## Ejecución con Mongo real
+Asegúrate de tener un contenedor/local Mongo levantado:
+```bash
+docker run -d --name mongo -p 27017:27017 mongo:7
+npm run start:dev
+```
+
+## Próximos Pasos Recomendados
+- Paginación y filtros en GET /employees.
+- DTO de respuesta dedicado (Response DTO) para evitar exponer directamente la entidad.
+- Mapeador (assembler) si la entidad de dominio diverge de la persistencia.
+- Manejo centralizado de errores (Exception Filter global + Logger estructurado).
+- Tests e2e alternativos contra una instancia Mongo ephemeral (Docker) para validar integración real.
+- Índices en colección (p.ej. `db.employees.createIndex({ department: 1, isActive: 1 })`).
+
+## Comandos Útiles
+```bash
+npm run lint       # Linter
+npm run build      # Compilación
+npm run start:dev  # Desarrollo con watch
+npm run test       # Unit tests
+npm run test:e2e   # E2E in-memory
+```
+
+## Attendances API
+
+La API de asistencias expone endpoints para listar, exportar y sincronizar registros.
+
+### GET /attendances
+Lista asistencias con paginación y filtros.
+- Query params (opcionales):
+  - page (number, default 1)
+  - limit (number, default 25)
+  - userId (number)
+  - machineNumber (number)
+  - from (ISO datetime) Ej: 2025-10-01T00:00:00.000Z
+  - to (ISO datetime) Ej: 2025-10-31T23:59:59.999Z
+  - sortDir ("asc" | "desc", default "desc")
+- Validaciones:
+  - Si se envían ambos from y to, from debe ser menor o igual a to.
+
+Ejemplos (Windows cmd.exe):
+
+```cmd
+curl "http://localhost:3000/attendances?userId=100&from=2025-10-01T00:00:00.000Z&to=2025-10-31T23:59:59.999Z&sortDir=asc"
+```
+
+### GET /attendances/export
+Exporta el listado filtrado a CSV o JSON (mismos filtros que GET /attendances) y agrega:
+- format ("csv" | "json", default "csv")
+
+Ejemplos:
+
+```cmd
+:: JSON
+del /q attendances.json 2>nul
+curl -o attendances.json "http://localhost:3000/attendances/export?format=json&machineNumber=5&sortDir=desc"
+
+:: CSV
+del /q attendances.csv 2>nul
+curl -o attendances.csv "http://localhost:3000/attendances/export?format=csv&userId=200&from=2025-10-01&to=2025-10-31"
+```
+
+### POST /attendances/sync
+Dispara una sincronización manual contra la API externa. Puede ser por un dispositivo o para todos.
+- Body o query params (opcionales):
+  - machineNumber (1–254)
+  - from (string ISO, opcional)
+  - to (string ISO, opcional)
+- Validaciones:
+  - machineNumber debe estar en rango 1–254 si se envía.
+  - Si se envían ambos from y to, deben ser fechas ISO válidas y from <= to.
+
+Ejemplos:
+
+```cmd
+:: Sync para un dispositivo y rango
+curl -X POST -H "Content-Type: application/json" ^
+  -d "{\"machineNumber\":5,\"from\":\"2025-10-01\",\"to\":\"2025-10-31\"}" ^
+  "http://localhost:3000/attendances/sync"
+
+:: Sync para todos los dispositivos (sin rango especificado)
+curl -X POST "http://localhost:3000/attendances/sync"
+```
+
+### Variables de entorno relevantes
+- EXTERNAL_EMP_API_URL: URL base de la API externa de asistencia. Si no incluye "/attendance", se agrega automáticamente.
+- EXTERNAL_EMP_API_TIMEOUT_MS: timeout en ms (default 30000).
+- ATT_SYNC_ENABLED: habilita sync automático ("true" por defecto).
+- ATT_SYNC_INTERVAL_MINUTES: intervalo de sync automática en minutos (default 120).
+- ATT_SYNC_RUN_AT_START: ejecuta un sync al iniciar ("true" por defecto).
