@@ -10,11 +10,15 @@ import { GetAttendanceQueryDto } from '../dto/get-attendance-query.dto';
 import { ExportAttendanceQueryDto } from '../dto/export-attendance-query.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { GetAllEmployeeUseCase } from '../../../employee/application/getAllEmployeeUseCase';
 
 @ApiTags('attendances')
 @Controller('attendances')
 export class AttendanceController {
-  constructor(private readonly listUseCase: GetAttendancesUseCase) {}
+  constructor(
+    private readonly listUseCase: GetAttendancesUseCase,
+    private readonly getAllEmployeesUseCase: GetAllEmployeeUseCase,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -34,11 +38,25 @@ export class AttendanceController {
       to: q.to,
       sortDir: q.sortDir,
     });
+
+    // Map userId -> { name, position } using employees.externalId
+    const employees = (await this.getAllEmployeesUseCase.execute()) || [];
+    const idToInfo = new Map<number, { name: string; position: string }>();
+    for (const e of employees as any[]) {
+      const ext = (e as any).externalId;
+      if (typeof ext === 'number')
+        idToInfo.set(ext, {
+          name: (e as any).name,
+          position: (e as any).position ?? 'sin asignar',
+        });
+    }
+
     return {
       data: res.data.map((a) => ({
         id: a.id,
         attendanceMachineID: a.attendanceMachineID,
-        userId: a.userId,
+        userName: idToInfo.get(a.userId)?.name ?? String(a.userId),
+        position: idToInfo.get(a.userId)?.position ?? 'sin asignar',
         attendanceTime: a.attendanceTime,
         accessMode: a.accessMode,
         attendanceStatus: a.attendanceStatus,
@@ -59,7 +77,7 @@ export class AttendanceController {
     }
 
     // Ensure day-range behavior: if only from is given, use same-day end for to
-    let from = q.from;
+    const from = q.from;
     let to = q.to;
     if (from && !to) {
       const end = new Date(from);
@@ -77,11 +95,24 @@ export class AttendanceController {
       sortDir: q.sortDir,
     });
 
+    // Build userId -> { name, position } map
+    const employees = (await this.getAllEmployeesUseCase.execute()) || [];
+    const idToInfo = new Map<number, { name: string; position: string }>();
+    for (const e of employees as any[]) {
+      const ext = (e as any).externalId;
+      if (typeof ext === 'number')
+        idToInfo.set(ext, {
+          name: (e as any).name,
+          position: (e as any).position ?? 'sin asignar',
+        });
+    }
+
     const format = (q.format || 'csv').toLowerCase() as 'csv' | 'json';
     const header = [
       'id',
       'attendanceMachineID',
-      'userId',
+      'userName',
+      'position',
       'attendanceTime',
       'accessMode',
       'attendanceStatus',
@@ -92,7 +123,8 @@ export class AttendanceController {
     const rows: Row[] = result.data.map((a) => ({
       id: a.id ?? '',
       attendanceMachineID: a.attendanceMachineID,
-      userId: a.userId,
+      userName: idToInfo.get(a.userId)?.name ?? String(a.userId),
+      position: idToInfo.get(a.userId)?.position ?? 'sin asignar',
       attendanceTime: a.attendanceTime.toISOString(),
       accessMode: a.accessMode,
       attendanceStatus: a.attendanceStatus,
@@ -104,7 +136,16 @@ export class AttendanceController {
         'Content-Disposition',
         'attachment; filename="attendances.json"',
       );
-      return rows;
+      // Return only selected keys in header order for JSON consistency
+      return rows.map((r) => ({
+        id: r.id,
+        attendanceMachineID: r.attendanceMachineID,
+        userName: r.userName,
+        position: r.position,
+        attendanceTime: r.attendanceTime,
+        accessMode: r.accessMode,
+        attendanceStatus: r.attendanceStatus,
+      }));
     }
 
     const csv = [
@@ -112,7 +153,7 @@ export class AttendanceController {
       ...rows.map((r) =>
         header
           .map((h) => String(r[h]).replace(/"/g, '""'))
-          .map((v) => (/,|\n|"/.test(v) ? `"${v}"` : v))
+          .map((v) => (/[",\n]/.test(v) ? `"${v}"` : v))
           .join(','),
       ),
     ].join('\n');

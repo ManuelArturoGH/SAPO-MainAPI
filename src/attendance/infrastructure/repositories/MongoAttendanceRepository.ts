@@ -39,11 +39,12 @@ export class MongoAttendanceRepository implements AttendanceRepository {
   ): Promise<{ inserted: boolean; existingId?: string | null }> {
     const db = await connectMongo();
     const col = this.getCollection(db);
+    const when = new Date(att.attendanceTime);
     const doc: AttendanceDocument = {
       _id: new ObjectId(),
       attendanceMachineID: att.attendanceMachineID,
       userId: att.userId,
-      attendanceTime: new Date(att.attendanceTime),
+      attendanceTime: when,
       accessMode: att.accessMode,
       attendanceStatus: att.attendanceStatus,
       createdAt: new Date(),
@@ -68,10 +69,11 @@ export class MongoAttendanceRepository implements AttendanceRepository {
     const col = this.getCollection(db);
     const now = new Date();
     const ops = atts.map((att) => {
+      const when = new Date(att.attendanceTime);
       const filter = {
         attendanceMachineID: att.attendanceMachineID,
         userId: att.userId,
-        attendanceTime: new Date(att.attendanceTime),
+        attendanceTime: when,
       } as const;
       return {
         updateOne: {
