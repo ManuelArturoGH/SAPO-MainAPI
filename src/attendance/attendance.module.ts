@@ -6,9 +6,10 @@ import { MongoAttendanceRepository } from './infrastructure/repositories/MongoAt
 import { DeviceModule } from '../device/device.module';
 import { ExternalAttendanceSyncService } from './infrastructure/services/external-attendance-sync.service';
 import { AttendanceIndexInitializerService } from './infrastructure/services/attendance-index-initializer.service';
+import { EmployeeModule } from '../employee/employee.module';
 
 @Module({
-  imports: [DeviceModule],
+  imports: [DeviceModule, EmployeeModule],
   controllers: [AttendanceController, AttendanceSyncController],
   providers: [
     GetAttendancesUseCase,
