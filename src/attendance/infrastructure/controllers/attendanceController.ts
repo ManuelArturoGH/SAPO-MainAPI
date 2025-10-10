@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { GetAttendancesUseCase } from '../../application/getAttendancesUseCase';
 import { GetAttendanceQueryDto } from '../dto/get-attendance-query.dto';
+import { ExportAttendanceQueryDto } from '../dto/export-attendance-query.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 
@@ -50,21 +51,32 @@ export class AttendanceController {
   @ApiOperation({ summary: 'Exportar asistencias a CSV o JSON' })
   @ApiResponse({ status: 200, description: 'Archivo exportado' })
   async export(
-    @Query() q: GetAttendanceQueryDto & { format?: 'csv' | 'json' },
+    @Query() q: ExportAttendanceQueryDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     if (q.from && q.to && q.from > q.to) {
       throw new BadRequestException('from debe ser menor o igual a to');
     }
+
+    // Ensure day-range behavior: if only from is given, use same-day end for to
+    let from = q.from;
+    let to = q.to;
+    if (from && !to) {
+      const end = new Date(from);
+      end.setUTCHours(23, 59, 59, 999);
+      to = end;
+    }
+
     const result = await this.listUseCase.execute({
       page: q.page,
       limit: q.limit,
       userId: q.userId,
       machineNumber: q.machineNumber,
-      from: q.from,
-      to: q.to,
+      from,
+      to,
       sortDir: q.sortDir,
     });
+
     const format = (q.format || 'csv').toLowerCase() as 'csv' | 'json';
     const header = [
       'id',
@@ -74,8 +86,9 @@ export class AttendanceController {
       'accessMode',
       'attendanceStatus',
     ] as const;
-    type RowKey = typeof header[number];
+    type RowKey = (typeof header)[number];
     type Row = Record<RowKey, string | number>;
+
     const rows: Row[] = result.data.map((a) => ({
       id: a.id ?? '',
       attendanceMachineID: a.attendanceMachineID,
@@ -84,6 +97,7 @@ export class AttendanceController {
       accessMode: a.accessMode,
       attendanceStatus: a.attendanceStatus,
     }));
+
     if (format === 'json') {
       res.setHeader('Content-Type', 'application/json');
       res.setHeader(
@@ -92,6 +106,7 @@ export class AttendanceController {
       );
       return rows;
     }
+
     const csv = [
       header.join(','),
       ...rows.map((r) =>
@@ -101,6 +116,7 @@ export class AttendanceController {
           .join(','),
       ),
     ].join('\n');
+
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader(
       'Content-Disposition',
