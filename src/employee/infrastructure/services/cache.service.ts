@@ -20,7 +20,10 @@ export class CacheService {
   buildKey(parts: Record<string, unknown>): string {
     return Object.entries(parts)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}:${v === undefined ? '-' : v}`)
+      .map(
+        ([k, v]) =>
+          `${k}:${v === undefined ? '-' : typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v as unknown)}`,
+      )
       .join('|');
   }
 

@@ -19,7 +19,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "print:db": "ts-node ./scripts/print-db.ts",
-    "migrate:position": "ts-node ./scripts/migrate-add-position.ts"
+    "migrate:position": "ts-node ./scripts/migrate-add-position.ts",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -61,7 +62,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "patch-package": "^8.0.0"
   },
   "jest": {
     "moduleFileExtensions": [

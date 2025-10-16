@@ -7,4 +7,3 @@ import { RequestQueueService } from './request-queue.service';
   exports: [RequestQueueService],
 })
 export class SharedModule {}
-

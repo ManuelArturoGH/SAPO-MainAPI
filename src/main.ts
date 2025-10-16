@@ -35,14 +35,14 @@ async function bootstrap() {
   try {
     await app.listen(desiredPort, host);
   } catch (err: unknown) {
-    if ((err as any)?.code === 'EADDRINUSE') {
+    if ((err as { code: string })?.code === 'EADDRINUSE') {
       const fallback = Number(process.env.PORT_FALLBACK ?? desiredPort + 1);
-      // eslint-disable-next-line no-console
+
       console.warn(
         `Port ${desiredPort} is in use. Trying fallback port ${fallback}...`,
       );
       await app.listen(fallback, host);
-      // eslint-disable-next-line no-console
+
       console.log(
         `Server started on http://${host}:${fallback} (fallback due to EADDRINUSE)`,
       );

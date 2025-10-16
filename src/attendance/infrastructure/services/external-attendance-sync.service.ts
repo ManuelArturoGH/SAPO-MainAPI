@@ -217,14 +217,12 @@ export class ExternalAttendanceSyncService
     ]);
     let userId = this.parseNumberLike(userRaw);
     // Fallback: extract first number sequence anywhere in the string (e.g., 'E123' -> 123)
-    let usedLooseUserParse = false;
     if (userId === null && typeof userRaw === 'string') {
       const m = /-?\d+/.exec(userRaw);
       if (m) {
         const n = parseInt(m[0], 10);
         if (Number.isFinite(n)) {
           userId = n;
-          usedLooseUserParse = true;
         }
       }
     }

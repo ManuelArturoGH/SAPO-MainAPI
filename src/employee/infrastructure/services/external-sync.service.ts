@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Inject,
   Injectable,
@@ -13,7 +14,8 @@ import { CacheService } from './cache.service';
 import type { EmployeeRepository } from '../../domain/interfaces/employeeRepository';
 import { CronJob } from 'cron';
 import type { DeviceRepository } from '../../../device/domain/interfaces/deviceRepository';
-import { RequestQueueService } from '../../../shared/request-queue.service';
+import { RequestQueueService } from '../../../shared';
+import { Device } from '../../../device/domain/models/device';
 
 interface ExternalEmployeeDto {
   id: number;
@@ -86,7 +88,10 @@ export class ExternalEmployeeSyncService
     const finalBase = /\/employees$/i.test(baseNormalized)
       ? baseNormalized
       : `${baseNormalized}/employees`;
-    this.axios = axios.create({ baseURL: finalBase, timeout: Number(process.env.EXTERNAL_EMP_API_TIMEOUT_MS ?? 60000) });
+    this.axios = axios.create({
+      baseURL: finalBase,
+      timeout: Number(process.env.EXTERNAL_EMP_API_TIMEOUT_MS ?? 60000),
+    });
     this.logger.log(
       `[ExternalSync] Using external employees endpoint base: ${finalBase}`,
     );
@@ -113,7 +118,7 @@ export class ExternalEmployeeSyncService
     return { stats: this.getStats(), employees: this.getLastEmployees() };
   }
 
-  async onModuleInit(): Promise<void> {
+  onModuleInit(): void {
     if ((process.env.API_SYNC_ENABLED ?? 'true').toLowerCase() !== 'true') {
       this.logger.log('External sync disabled via API_SYNC_ENABLED');
       return;
@@ -152,7 +157,7 @@ export class ExternalEmployeeSyncService
   }
 
   onModuleDestroy(): void {
-    if (this.intervalRef) clearInterval(this.intervalRef as any);
+    if (this.intervalRef) clearInterval(this.intervalRef);
     for (const job of this.cronJobs) job.stop();
     this.cronJobs = [];
   }
@@ -244,9 +249,9 @@ export class ExternalEmployeeSyncService
       const batch = await this.deviceRepo.getDevices({ page, limit: pageSize });
       for (const d of batch.data) {
         result.push({
-          ip: (d as any).ip,
-          port: (d as any).port,
-          machineNumber: (d as any).machineNumber,
+          ip: d.ip,
+          port: d.port,
+          machineNumber: d.machineNumber,
         });
       }
       if (batch.data.length < pageSize) break;
@@ -268,7 +273,7 @@ export class ExternalEmployeeSyncService
       throw new NotFoundException(
         `Device con machineNumber ${machineNumber} no encontrado`,
       );
-    const d = res.data[0] as any;
+    const d = res.data[0];
     return { ip: d.ip, port: d.port, machineNumber: d.machineNumber };
   }
 
@@ -308,7 +313,10 @@ export class ExternalEmployeeSyncService
         }>,
       ) => Promise<{ upserted: number; matched: number }>;
     };
-    if (!repoAny.upsertExternalEmployee && !repoAny.bulkUpsertExternalEmployees) {
+    if (
+      !repoAny.upsertExternalEmployee &&
+      !repoAny.bulkUpsertExternalEmployees
+    ) {
       this.logger.warn('Repository does not support external employee upsert');
       return { processed: 0, devicesQueried: 0, employees: [] };
     }
@@ -346,7 +354,7 @@ export class ExternalEmployeeSyncService
     );
 
     for (let i = 0; i < deviceList.length; i++) {
-      const dev = deviceList[i];
+      const dev = deviceList[i] as Partial<Device>;
       let requestAttempted = false;
       try {
         // Skip devices with missing data to avoid 400 Bad Request on external API
@@ -377,7 +385,7 @@ export class ExternalEmployeeSyncService
           `[ExternalSync] Request -> ${this.axios.defaults.baseURL}?${queryString}`,
         );
         requestAttempted = true;
-        const resp = (this.queue
+        const resp = this.queue
           ? await this.queue.enqueue(
               () =>
                 this.axios.get<
@@ -386,10 +394,10 @@ export class ExternalEmployeeSyncService
                   params: queryParams,
                   paramsSerializer: (p) =>
                     orderedKeys
-                      .filter((k) => (p as any)[k] !== undefined)
+                      .filter((k) => p[k] !== undefined)
                       .map(
                         (k) =>
-                          `${encodeURIComponent(k)}=${encodeURIComponent(String((p as any)[k]))}`,
+                          `${encodeURIComponent(k)}=${encodeURIComponent(String(p[k]))}`,
                       )
                       .join('&'),
                 }),
@@ -404,13 +412,13 @@ export class ExternalEmployeeSyncService
               params: queryParams,
               paramsSerializer: (p) =>
                 orderedKeys
-                  .filter((k) => (p as any)[k] !== undefined)
+                  .filter((k) => p[k] !== undefined)
                   .map(
                     (k) =>
-                      `${encodeURIComponent(k)}=${encodeURIComponent(String((p as any)[k]))}`,
+                      `${encodeURIComponent(k)}=${encodeURIComponent(String(p[k]))}`,
                   )
                   .join('&'),
-            })) as any;
+            });
         this.debug(
           `[ExternalSync] Response status ${resp.status} for device ${dev.ip}:${dev.port}#${dev.machineNumber}`,
         );
@@ -439,7 +447,7 @@ export class ExternalEmployeeSyncService
           machineNumber: dev.machineNumber,
           ip: dev.ip,
           port: dev.port,
-          status: (resp as any).status,
+          status: resp.status,
           rawType,
           rawSnippet,
           rawLength,
@@ -460,13 +468,13 @@ export class ExternalEmployeeSyncService
           for (const item of payload) {
             // Normalizar id si viene como string numérica
             let idNum: number | null = null;
-            if (typeof (item as any).id === 'number') idNum = (item as any).id as number;
-            else if (typeof (item as any).id === 'string' && /^\d+$/.test((item as any).id))
-              idNum = parseInt((item as any).id, 10);
+            if (typeof item.id === 'number') idNum = item.id;
+            else if (typeof item.id === 'string' && /^\d+$/.test(item.id))
+              idNum = parseInt(item.id, 10);
             if (idNum === null) continue;
-            const nameVal = (item as any).name;
+            const nameVal = item.name;
             if (!nameVal || typeof nameVal !== 'string') continue;
-            const activeVal = !!(item as any).isActive;
+            const activeVal = item.isActive;
             const rec = {
               externalId: idNum,
               name: nameVal,
@@ -477,7 +485,9 @@ export class ExternalEmployeeSyncService
               buffer.push(rec);
               if (buffer.length >= bulkSize) {
                 const t0 = Date.now();
-                const res = await repoAny.bulkUpsertExternalEmployees(buffer.splice(0, buffer.length));
+                const res = await repoAny.bulkUpsertExternalEmployees(
+                  buffer.splice(0, buffer.length),
+                );
                 const tookChunk = Date.now() - t0;
                 upsertedTotal += res.upserted;
                 matchedTotal += res.matched;
@@ -507,8 +517,10 @@ export class ExternalEmployeeSyncService
             );
           }
         }
-      } catch (error) {
-        const anyErr: any = error;
+      } catch (error: unknown) {
+        const anyErr = error as {
+          response: { status?: number; data?: unknown };
+        };
         const status = anyErr?.response?.status;
         const data = anyErr?.response?.data;
         this.logger.warn(
@@ -532,10 +544,12 @@ export class ExternalEmployeeSyncService
   private parseExternalEmployees(raw: unknown): ExternalEmployeeDto[] {
     // Caso 1: array directa
     if (Array.isArray(raw))
-      return raw.filter((r) => r && typeof r === 'object');
+      return raw.filter(
+        (r) => r && typeof r === 'object',
+      ) as ExternalEmployeeDto[];
     // Caso 2: objeto con data (array)
     if (raw && typeof raw === 'object') {
-      const maybe = (raw as any).data;
+      const maybe = (raw as { data: ExternalEmployeeDto[] }).data;
       if (Array.isArray(maybe))
         return maybe.filter((r: any) => r && typeof r === 'object');
     }

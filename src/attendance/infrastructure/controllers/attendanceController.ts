@@ -42,12 +42,12 @@ export class AttendanceController {
     // Map userId -> { name, position } using employees.externalId
     const employees = (await this.getAllEmployeesUseCase.execute()) || [];
     const idToInfo = new Map<number, { name: string; position: string }>();
-    for (const e of employees as any[]) {
-      const ext = (e as any).externalId;
+    for (const e of employees) {
+      const ext = e.externalId;
       if (typeof ext === 'number')
         idToInfo.set(ext, {
-          name: (e as any).name,
-          position: (e as any).position ?? 'sin asignar',
+          name: e.name,
+          position: e.position ?? 'sin asignar',
         });
     }
 
@@ -98,12 +98,12 @@ export class AttendanceController {
     // Build userId -> { name, position } map
     const employees = (await this.getAllEmployeesUseCase.execute()) || [];
     const idToInfo = new Map<number, { name: string; position: string }>();
-    for (const e of employees as any[]) {
-      const ext = (e as any).externalId;
+    for (const e of employees) {
+      const ext = e.externalId;
       if (typeof ext === 'number')
         idToInfo.set(ext, {
-          name: (e as any).name,
-          position: (e as any).position ?? 'sin asignar',
+          name: e.name,
+          position: e.position ?? 'sin asignar',
         });
     }
 

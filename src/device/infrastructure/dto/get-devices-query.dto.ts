@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsInt, IsIP, IsOptional, Max, Min } from 'class-validator';
-
 export class GetDevicesQueryDto {
   @Transform(({ value }) => (value === undefined ? 1 : parseInt(value, 10)))
   @IsInt()

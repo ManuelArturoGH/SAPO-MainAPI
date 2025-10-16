@@ -206,12 +206,14 @@ export class MongoDBRepository implements EmployeeRepository {
     };
   }
 
-  async bulkUpsertExternalEmployees(datas: Array<{
-    externalId: number;
-    name: string;
-    isActive: boolean;
-    department: string;
-  }>): Promise<{ upserted: number; matched: number }> {
+  async bulkUpsertExternalEmployees(
+    datas: Array<{
+      externalId: number;
+      name: string;
+      isActive: boolean;
+      department: string;
+    }>,
+  ): Promise<{ upserted: number; matched: number }> {
     if (!datas.length) return { upserted: 0, matched: 0 };
     const db = await connectMongo();
     const collection = this.getCollection(db);
@@ -234,9 +236,9 @@ export class MongoDBRepository implements EmployeeRepository {
         upsert: true,
       },
     }));
-    const res = await (collection as any).bulkWrite(ops, { ordered: false });
-    const upserted = (res.upsertedCount as number) || 0;
-    const matched = (res.matchedCount as number) || 0;
+    const res = await collection.bulkWrite(ops, { ordered: false });
+    const upserted = res.upsertedCount || 0;
+    const matched = res.matchedCount || 0;
     return { upserted, matched };
   }
 }

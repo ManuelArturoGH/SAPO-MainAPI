@@ -9,6 +9,7 @@ import {
 import { ExternalEmployeeSyncService } from '../services/external-sync.service';
 import { ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { EmployeeFilter } from '../../domain/models/employeeFilter';
 
 class ManualSyncDto {
   @IsInt()
@@ -43,8 +44,8 @@ export class EmployeeSyncController {
       await this.syncService.triggerManual(machineNumber);
     const filtered =
       machineNumber !== undefined
-        ? (employees as any[]).filter(
-            (e: any) => e.machineNumber === machineNumber,
+        ? (employees as EmployeeFilter[]).filter(
+            (e: EmployeeFilter) => e.machineNumber === machineNumber,
           )
         : employees;
     const rawResponses = this.syncService.getLastRawResponses();
@@ -86,6 +87,6 @@ export class EmployeeSyncController {
     }
     return this.syncService
       .getLastEmployees()
-      .filter((e) => (e as any).machineNumber === machineNumber);
+      .filter((e) => (e as EmployeeFilter).machineNumber === machineNumber);
   }
 }

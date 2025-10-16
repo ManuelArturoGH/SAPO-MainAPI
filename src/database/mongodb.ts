@@ -20,8 +20,6 @@ function resolveDb(): string {
 let client: MongoClient | null = null;
 let db: Db | null = null;
 let connecting: Promise<Db> | null = null;
-const loggedConfig = false;
-
 export async function connectMongo(config: MongoConfig = {}): Promise<Db> {
   if (db) return db;
   if (connecting) return connecting;

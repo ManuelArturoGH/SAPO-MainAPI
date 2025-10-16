@@ -87,7 +87,7 @@ export class GetEmployeesUseCase {
 
       return out;
     } catch (error) {
-      this.logger.error('Error fetching employees', error as any);
+      this.logger.error('Error fetching employees', error);
       throw error;
     }
   }

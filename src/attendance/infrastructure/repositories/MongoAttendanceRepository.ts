@@ -3,6 +3,7 @@ import { Collection, Db, ObjectId } from 'mongodb';
 import { connectMongo } from '../../../database/mongodb';
 import type { AttendanceRepository } from '../../domain/interfaces/attendanceRepository';
 import { Attendance } from '../../domain/models/attendance';
+import { Filter } from 'mongodb';
 
 interface AttendanceDocument {
   _id: ObjectId;
@@ -93,10 +94,10 @@ export class MongoAttendanceRepository implements AttendanceRepository {
         },
       } as const;
     });
-    const res = await (col as any).bulkWrite(ops, { ordered: false });
+    const res = await col.bulkWrite(ops, { ordered: false });
     // res.upsertedCount: number of inserted new docs; matchedCount counts matches for updateOne
-    const upserted = (res.upsertedCount as number) || 0;
-    const matched = (res.matchedCount as number) || 0;
+    const upserted = res.upsertedCount || 0;
+    const matched = res.matchedCount || 0;
     return { upserted, matched };
   }
 
@@ -120,7 +121,7 @@ export class MongoAttendanceRepository implements AttendanceRepository {
     } = params;
     const db = await connectMongo();
     const col = this.getCollection(db);
-    const filter: any = {};
+    const filter: Filter<AttendanceDocument> = {};
     if (userId !== undefined) filter.userId = userId;
     if (machineNumber !== undefined) filter.attendanceMachineID = machineNumber; // map alias
     if (from || to) {

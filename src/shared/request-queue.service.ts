@@ -19,9 +19,18 @@ export class RequestQueueService {
     return Number.isFinite(raw) && raw >= 0 ? raw : 60000;
   }
 
-  enqueue<T>(fn: () => Promise<T>, opts?: { delayMs?: number; label?: string }): Promise<T> {
+  enqueue<T>(
+    fn: () => Promise<T>,
+    opts?: { delayMs?: number; label?: string },
+  ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      this.queue.push({ fn, resolve, reject, delayMs: opts?.delayMs, label: opts?.label });
+      this.queue.push({
+        fn,
+        resolve,
+        reject,
+        delayMs: opts?.delayMs,
+        label: opts?.label,
+      });
       void this.process();
     });
   }
