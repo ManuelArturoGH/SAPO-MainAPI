@@ -28,6 +28,7 @@ async function bootstrap() {
         maxAge: 1000 * 60 * 60, // 1 hora en milisegundos
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
       },
     }),
   );
@@ -89,7 +90,7 @@ async function bootstrap() {
       await app.listen(fallback, host);
 
       console.log(
-        `Server started on http://${host}:${fallback} (fallback due to EADDRINUSE)`,
+        `Server started on https://${host}:${fallback} (fallback due to EADDRINUSE)`,
       );
     } else {
       throw err;
