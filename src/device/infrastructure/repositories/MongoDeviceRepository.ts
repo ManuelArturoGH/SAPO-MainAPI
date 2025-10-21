@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Collection, Db, ObjectId } from 'mongodb';
 import { connectMongo } from '../../../database/mongodb';
 import { Device } from '../../domain/models/device';
@@ -14,8 +14,6 @@ interface DeviceDocument {
 
 @Injectable()
 export class MongoDeviceRepository implements DeviceRepository {
-  private readonly logger = new Logger(MongoDeviceRepository.name);
-
   private getCollection(db: Db): Collection<DeviceDocument> {
     return db.collection<DeviceDocument>('devices');
   }

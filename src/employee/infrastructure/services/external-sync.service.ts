@@ -321,8 +321,7 @@ export class ExternalEmployeeSyncService
       return { processed: 0, devicesQueried: 0, employees: [] };
     }
 
-    let devices: Array<{ ip: string; port: number; machineNumber: number }> =
-      [];
+    let devices: Array<{ ip: string; port: number; machineNumber: number }>;
     if (machineNumberFilter !== undefined) {
       const single = await this.fetchDeviceByMachineNumber(machineNumberFilter);
       devices = [single];
@@ -468,12 +467,10 @@ export class ExternalEmployeeSyncService
           for (const item of payload) {
             // Normalizar id si viene como string numérica
             let idNum: number | null = null;
-            if (typeof item.id === 'number') idNum = item.id;
-            else if (typeof item.id === 'string' && /^\d+$/.test(item.id))
-              idNum = parseInt(item.id, 10);
+            idNum = item.id;
             if (idNum === null) continue;
             const nameVal = item.name;
-            if (!nameVal || typeof nameVal !== 'string') continue;
+            if (!nameVal) continue;
             const activeVal = item.isActive;
             const rec = {
               externalId: idNum,

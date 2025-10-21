@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Collection, Db, ObjectId } from 'mongodb';
 import { connectMongo } from '../../../database/mongodb';
 import type { AttendanceRepository } from '../../domain/interfaces/attendanceRepository';
@@ -17,8 +17,6 @@ interface AttendanceDocument {
 
 @Injectable()
 export class MongoAttendanceRepository implements AttendanceRepository {
-  private readonly logger = new Logger(MongoAttendanceRepository.name);
-
   private getCollection(db: Db): Collection<AttendanceDocument> {
     return db.collection<AttendanceDocument>('attendances');
   }

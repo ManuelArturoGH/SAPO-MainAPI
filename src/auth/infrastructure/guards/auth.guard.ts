@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -20,7 +21,7 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request: Request = context.switchToHttp().getRequest();
     const session = request.session;
 
     if (!session || !session.userId) {
@@ -29,11 +30,17 @@ export class AuthGuard implements CanActivate {
 
     // Verificar que la sesión no haya expirado (1 hora)
     const now = new Date().getTime();
-    const sessionCreatedAt = new Date(session.createdAt).getTime();
+    const sessionCreatedAt = new Date(
+      session.createdAt ? session.createdAt : new Date(),
+    ).getTime();
     const oneHourInMs = 60 * 60 * 1000;
 
     if (now - sessionCreatedAt > oneHourInMs) {
-      request.session.destroy();
+      request.session.destroy((err) => {
+        if (err) {
+          console.error('Error destroying session:', err);
+        }
+      });
       throw new UnauthorizedException('La sesión ha expirado');
     }
 

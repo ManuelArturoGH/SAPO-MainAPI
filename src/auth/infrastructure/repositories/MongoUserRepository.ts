@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Collection, ObjectId } from 'mongodb';
+import { Collection, ObjectId, WithId } from 'mongodb';
 import { User } from '../../domain/models/user';
 import type { UserRepository } from '../../domain/interfaces/userRepository';
 import { connectMongo } from '../../../database/mongodb';
@@ -32,7 +32,9 @@ export class MongoUserRepository implements UserRepository {
 
   async findById(id: string): Promise<User | null> {
     const collection = await this.getCollection();
-    const doc = await collection.findOne({ _id: new ObjectId(id) });
+    const doc = (await collection.findOne({
+      _id: new ObjectId(id),
+    })) as WithId<User>;
     if (!doc) return null;
 
     return new User(
@@ -46,7 +48,7 @@ export class MongoUserRepository implements UserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     const collection = await this.getCollection();
-    const doc = await collection.findOne({ email });
+    const doc = (await collection.findOne({ email })) as WithId<User>;
     if (!doc) return null;
 
     return new User(
@@ -60,7 +62,7 @@ export class MongoUserRepository implements UserRepository {
 
   async findAll(): Promise<User[]> {
     const collection = await this.getCollection();
-    const docs = await collection.find().toArray();
+    const docs = (await collection.find().toArray()) as WithId<User>[];
     return docs.map(
       (doc) =>
         new User(
@@ -75,16 +77,16 @@ export class MongoUserRepository implements UserRepository {
 
   async update(id: string, user: User): Promise<User | null> {
     const collection = await this.getCollection();
-    const updateDoc: any = {};
+    const updateDoc: Partial<User> = {};
     if (user.name) updateDoc.name = user.name;
     if (user.email) updateDoc.email = user.email;
     if (user.password) updateDoc.password = user.password;
 
-    const result = await collection.findOneAndUpdate(
+    const result = (await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: updateDoc },
       { returnDocument: 'after' },
-    );
+    )) as WithId<User>;
 
     if (!result) return null;
 

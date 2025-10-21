@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unsafe-argument, @typescript-eslint/require-await, prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unsafe-argument, @typescript-eslint/require-await */
 import {
   BadRequestException,
   Inject,
@@ -14,7 +14,7 @@ import type { DeviceRepository } from '../../../device/domain/interfaces/deviceR
 import type { AttendanceRepository } from '../../domain/interfaces/attendanceRepository';
 import { CronJob } from 'cron';
 import { Attendance } from '../../domain/models/attendance';
-import { RequestQueueService } from '../../../shared/request-queue.service';
+import { RequestQueueService } from '../../../shared';
 
 interface ExternalAttendanceDto {
   attendanceMachineID: number | string;
@@ -45,7 +45,8 @@ export class ExternalAttendanceSyncService
       ? baseNormalized
       : `${baseNormalized}/attendance`;
     const rawTimeout = Number(process.env.EXTERNAL_EMP_API_TIMEOUT_MS ?? 60000);
-    const timeout = Number.isFinite(rawTimeout) && rawTimeout > 0 ? rawTimeout : 60000;
+    const timeout =
+      Number.isFinite(rawTimeout) && rawTimeout > 0 ? rawTimeout : 60000;
     this.axios = axios.create({
       baseURL: finalBase,
       timeout,
@@ -141,8 +142,7 @@ export class ExternalAttendanceSyncService
   private getPerRequestDelayMs(): number {
     if (process.env.NODE_ENV === 'test') return 0;
     const raw = Number(process.env.ATT_SYNC_DELAY_MS ?? 60000);
-    const val = Number.isFinite(raw) && raw >= 0 ? raw : 60000;
-    return val;
+    return Number.isFinite(raw) && raw >= 0 ? raw : 60000;
   }
 
   private sleep(ms: number) {
@@ -241,11 +241,21 @@ export class ExternalAttendanceSyncService
     ]);
     const attendanceTime = this.normalizeDate(timeRaw as any);
 
-    if (!Number.isFinite(machine as any) || !Number.isFinite(userId as any) || !attendanceTime)
+    if (
+      !Number.isFinite(machine as any) ||
+      !Number.isFinite(userId as any) ||
+      !attendanceTime
+    )
       return null;
 
     const accessMode = String(
-      this.pickFirst(item, ['accessMode', 'AccessMode', 'mode', 'verifyType', 'ioMode']) ?? '',
+      this.pickFirst(item, [
+        'accessMode',
+        'AccessMode',
+        'mode',
+        'verifyType',
+        'ioMode',
+      ]) ?? '',
     );
     const attendanceStatus = String(
       this.pickFirst(item, [
@@ -273,11 +283,19 @@ export class ExternalAttendanceSyncService
     if (Array.isArray(raw)) return raw as ExternalAttendanceDto[];
 
     // { data: [] }
-    if (raw && Array.isArray(raw.data)) return raw.data as ExternalAttendanceDto[];
+    if (raw && Array.isArray(raw.data))
+      return raw.data as ExternalAttendanceDto[];
 
     // { data: { items|records|attendances|rows: [] } }
     const nested = raw?.data;
-    const candidateKeys = ['items', 'records', 'attendances', 'rows', 'result', 'results'];
+    const candidateKeys = [
+      'items',
+      'records',
+      'attendances',
+      'rows',
+      'result',
+      'results',
+    ];
     if (nested && typeof nested === 'object') {
       for (const k of candidateKeys) {
         const v = (nested as any)[k];
@@ -308,18 +326,14 @@ export class ExternalAttendanceSyncService
         const d = new Date(ms);
         return Number.isFinite(d.getTime()) ? d : null;
       }
-      if (typeof value === 'string') {
-        const trimmed = value.trim();
-        // Try ISO parse first
-        const d1 = new Date(trimmed);
-        if (Number.isFinite(d1.getTime())) return d1;
-        // Try numeric string
-        const num = Number(trimmed);
-        if (Number.isFinite(num)) {
-          const ms = num < 1e12 ? num * 1000 : num;
-          const d2 = new Date(ms);
-          return Number.isFinite(d2.getTime()) ? d2 : null;
-        }
+      const trimmed = value.trim();
+      const d1 = new Date(trimmed);
+      if (Number.isFinite(d1.getTime())) return d1;
+      const num = Number(trimmed);
+      if (Number.isFinite(num)) {
+        const ms = num < 1e12 ? num * 1000 : num;
+        const d2 = new Date(ms);
+        return Number.isFinite(d2.getTime()) ? d2 : null;
       }
     } catch {
       // ignore
@@ -358,8 +372,7 @@ export class ExternalAttendanceSyncService
     from?: string,
     to?: string,
   ): Promise<void> {
-    let devices: Array<{ ip: string; port: number; machineNumber: number }> =
-      [];
+    let devices: Array<{ ip: string; port: number; machineNumber: number }>;
     if (machineNumberFilter !== undefined)
       devices = [await this.fetchDeviceByMachineNumber(machineNumberFilter)];
     else devices = await this.fetchAllDevices();
@@ -386,40 +399,43 @@ export class ExternalAttendanceSyncService
           from,
           to,
         } as const;
-        const resp = (this.queue
-          ? await this.queue.enqueue(
-              () =>
-                this.axios.get<
-                  ExternalAttendanceDto[] | { data: ExternalAttendanceDto[] }
-                >('', {
-                  params,
-                  paramsSerializer: (p) =>
-                    ['machineNumber', 'ipAddress', 'port', 'from', 'to']
-                      .filter(
-                        (k) =>
-                          (p as any)[k] !== undefined && (p as any)[k] !== null,
-                      )
-                      .map((k) => `${k}=${encodeURIComponent((p as any)[k])}`)
-                      .join('&'),
-                }),
-              {
-                delayMs,
-                label: `attendance ${dev.ip}:${dev.port}#${dev.machineNumber}`,
-              },
-            )
-          : await this.axios.get<
-              ExternalAttendanceDto[] | { data: ExternalAttendanceDto[] }
-            >('', {
-              params,
-              paramsSerializer: (p) =>
-                ['machineNumber', 'ipAddress', 'port', 'from', 'to']
-                  .filter(
-                    (k) =>
-                      (p as any)[k] !== undefined && (p as any)[k] !== null,
-                  )
-                  .map((k) => `${k}=${encodeURIComponent((p as any)[k])}`)
-                  .join('&'),
-            })) as any;
+        const resp = (
+          this.queue
+            ? await this.queue.enqueue(
+                () =>
+                  this.axios.get<
+                    ExternalAttendanceDto[] | { data: ExternalAttendanceDto[] }
+                  >('', {
+                    params,
+                    paramsSerializer: (p) =>
+                      ['machineNumber', 'ipAddress', 'port', 'from', 'to']
+                        .filter(
+                          (k) =>
+                            (p as any)[k] !== undefined &&
+                            (p as any)[k] !== null,
+                        )
+                        .map((k) => `${k}=${encodeURIComponent((p as any)[k])}`)
+                        .join('&'),
+                  }),
+                {
+                  delayMs,
+                  label: `attendance ${dev.ip}:${dev.port}#${dev.machineNumber}`,
+                },
+              )
+            : await this.axios.get<
+                ExternalAttendanceDto[] | { data: ExternalAttendanceDto[] }
+              >('', {
+                params,
+                paramsSerializer: (p) =>
+                  ['machineNumber', 'ipAddress', 'port', 'from', 'to']
+                    .filter(
+                      (k) =>
+                        (p as any)[k] !== undefined && (p as any)[k] !== null,
+                    )
+                    .map((k) => `${k}=${encodeURIComponent((p as any)[k])}`)
+                    .join('&'),
+              })
+        ) as any;
         attempted = true;
         let raw: unknown = resp.data as any;
         let parsedFromString = false;
