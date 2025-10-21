@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  Inject,
 } from '@nestjs/common';
 import type { UserRepository } from '../domain/interfaces/userRepository';
 import { User } from '../domain/models/user';
@@ -9,7 +10,9 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UpdateUserUseCase {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    @Inject('UserRepository') private readonly userRepository: UserRepository,
+  ) {}
 
   async execute(
     id: string,
