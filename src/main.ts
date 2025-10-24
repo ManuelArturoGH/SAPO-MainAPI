@@ -12,7 +12,22 @@ config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Asegurar que Express confía en el proxy (necesario para req.secure y X-Forwarded-Proto)
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   // Configurar sesiones con MongoDB
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieSecureEnv = process.env.SESSION_COOKIE_SECURE?.toLowerCase();
+  const cookieSecure =
+    cookieSecureEnv === 'true' || (cookieSecureEnv == null && isProd);
+  const cookieSameSiteEnv = process.env.SESSION_COOKIE_SAMESITE?.toLowerCase();
+  const cookieSameSite =
+    (cookieSameSiteEnv === 'lax' && 'lax') ||
+    (cookieSameSiteEnv === 'strict' && 'strict') ||
+    (cookieSameSiteEnv === 'none' && 'none') ||
+    (cookieSecure ? 'none' : 'lax');
+
   app.use(
     session({
       secret: process.env.SESSION_SECRET || 'your-secret-key-change-this',
@@ -27,8 +42,8 @@ async function bootstrap() {
       cookie: {
         maxAge: 1000 * 60 * 60, // 1 hora en milisegundos
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
+        secure: cookieSecure,
+        sameSite: cookieSameSite,
       },
     }),
   );

@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sapo-main-api:latest
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=3000
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - MONGODB_DB=${MONGODB_DB:-sapo}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-true}
+      - SESSION_COOKIE_SAMESITE=${SESSION_COOKIE_SAMESITE:-none}
+    depends_on:
+      - mongo
+    expose:
+      - "3000"
+    restart: unless-stopped
+    networks:
+      - sapo
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - app
+    environment:
+      - SERVER_NAME=${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/default.conf.template:/etc/nginx/conf.d/default.conf.template:ro
+      - ./deploy/nginx/www:/var/www/certbot
+      - ./deploy/nginx/certs:/etc/letsencrypt
+      - ./deploy/nginx/start-nginx.sh:/start-nginx.sh:ro
+    command: ["/bin/sh", "-c", "chmod +x /start-nginx.sh && /start-nginx.sh"]
+    restart: unless-stopped
+    networks:
+      - sapo
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./deploy/nginx/www:/var/www/certbot
+      - ./deploy/nginx/certs:/etc/letsencrypt
+    depends_on:
+      - nginx
+    networks:
+      - sapo
+
+  mongo:
+    image: mongo:7
+    command: ["--wiredTigerCacheSizeGB", "1"]
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    networks:
+      - sapo
+
+volumes:
+  mongo_data:
+
+networks:
+  sapo:
+    driver: bridge
