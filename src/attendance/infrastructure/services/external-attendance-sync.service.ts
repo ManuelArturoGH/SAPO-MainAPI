@@ -241,11 +241,21 @@ export class ExternalAttendanceSyncService
     ]);
     const attendanceTime = this.normalizeDate(timeRaw as any);
 
-    if (!Number.isFinite(machine as any) || !Number.isFinite(userId as any) || !attendanceTime)
+    if (
+      !Number.isFinite(machine as any) ||
+      !Number.isFinite(userId as any) ||
+      !attendanceTime
+    )
       return null;
 
     const accessMode = String(
-      this.pickFirst(item, ['accessMode', 'AccessMode', 'mode', 'verifyType', 'ioMode']) ?? '',
+      this.pickFirst(item, [
+        'accessMode',
+        'AccessMode',
+        'mode',
+        'verifyType',
+        'ioMode',
+      ]) ?? '',
     );
     const attendanceStatus = String(
       this.pickFirst(item, [
@@ -273,11 +283,19 @@ export class ExternalAttendanceSyncService
     if (Array.isArray(raw)) return raw as ExternalAttendanceDto[];
 
     // { data: [] }
-    if (raw && Array.isArray(raw.data)) return raw.data as ExternalAttendanceDto[];
+    if (raw && Array.isArray(raw.data))
+      return raw.data as ExternalAttendanceDto[];
 
     // { data: { items|records|attendances|rows: [] } }
     const nested = raw?.data;
-    const candidateKeys = ['items', 'records', 'attendances', 'rows', 'result', 'results'];
+    const candidateKeys = [
+      'items',
+      'records',
+      'attendances',
+      'rows',
+      'result',
+      'results',
+    ];
     if (nested && typeof nested === 'object') {
       for (const k of candidateKeys) {
         const v = (nested as any)[k];
@@ -386,40 +404,43 @@ export class ExternalAttendanceSyncService
           from,
           to,
         } as const;
-        const resp = (this.queue
-          ? await this.queue.enqueue(
-              () =>
-                this.axios.get<
-                  ExternalAttendanceDto[] | { data: ExternalAttendanceDto[] }
-                >('', {
-                  params,
-                  paramsSerializer: (p) =>
-                    ['machineNumber', 'ipAddress', 'port', 'from', 'to']
-                      .filter(
-                        (k) =>
-                          (p as any)[k] !== undefined && (p as any)[k] !== null,
-                      )
-                      .map((k) => `${k}=${encodeURIComponent((p as any)[k])}`)
-                      .join('&'),
-                }),
-              {
-                delayMs,
-                label: `attendance ${dev.ip}:${dev.port}#${dev.machineNumber}`,
-              },
-            )
-          : await this.axios.get<
-              ExternalAttendanceDto[] | { data: ExternalAttendanceDto[] }
-            >('', {
-              params,
-              paramsSerializer: (p) =>
-                ['machineNumber', 'ipAddress', 'port', 'from', 'to']
-                  .filter(
-                    (k) =>
-                      (p as any)[k] !== undefined && (p as any)[k] !== null,
-                  )
-                  .map((k) => `${k}=${encodeURIComponent((p as any)[k])}`)
-                  .join('&'),
-            })) as any;
+        const resp = (
+          this.queue
+            ? await this.queue.enqueue(
+                () =>
+                  this.axios.get<
+                    ExternalAttendanceDto[] | { data: ExternalAttendanceDto[] }
+                  >('', {
+                    params,
+                    paramsSerializer: (p) =>
+                      ['machineNumber', 'ipAddress', 'port', 'from', 'to']
+                        .filter(
+                          (k) =>
+                            (p as any)[k] !== undefined &&
+                            (p as any)[k] !== null,
+                        )
+                        .map((k) => `${k}=${encodeURIComponent((p as any)[k])}`)
+                        .join('&'),
+                  }),
+                {
+                  delayMs,
+                  label: `attendance ${dev.ip}:${dev.port}#${dev.machineNumber}`,
+                },
+              )
+            : await this.axios.get<
+                ExternalAttendanceDto[] | { data: ExternalAttendanceDto[] }
+              >('', {
+                params,
+                paramsSerializer: (p) =>
+                  ['machineNumber', 'ipAddress', 'port', 'from', 'to']
+                    .filter(
+                      (k) =>
+                        (p as any)[k] !== undefined && (p as any)[k] !== null,
+                    )
+                    .map((k) => `${k}=${encodeURIComponent((p as any)[k])}`)
+                    .join('&'),
+              })
+        ) as any;
         attempted = true;
         let raw: unknown = resp.data as any;
         let parsedFromString = false;

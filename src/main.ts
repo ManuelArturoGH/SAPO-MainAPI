@@ -9,46 +9,6 @@ config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS with strict origin validation
-  const allowedOrigins = [
-    'https://sapo-web-app.test-apis-web-app.cloud',
-    'http://sapo-web-app.test-apis-web-app.cloud',
-    'https://sapo-api-app.test-apis-web-app.cloud',
-    'http://sapo-api-app.test-apis-web-app.cloud',
-    // También agregar dominios de Vercel por si acaso
-    /https:\/\/.*\.vercel\.app$/,
-  ];
-
-  app.enableCors({
-    origin: (
-      requestOrigin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-    ) => {
-      // Allow requests with no origin (direct browser access, testing)
-      if (!requestOrigin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(requestOrigin)) {
-        callback(null, true);
-      } else {
-        console.log(`CORS blocked origin: ${requestOrigin}`);
-        callback(new Error('Not allowed by CORS'), false);
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With',
-      'Accept',
-      'Origin',
-    ],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    maxAge: 3600,
-  });
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
