@@ -110,6 +110,11 @@ export class MongoAttendanceRepository implements AttendanceRepository {
     to?: Date;
     sortDir?: 'asc' | 'desc';
   }) {
+    console.log(
+      '🟠 [MongoAttendanceRepository.getAttendances] INICIO - Parámetros recibidos:',
+      JSON.stringify(params),
+    );
+
     const {
       page,
       limit,
@@ -119,7 +124,15 @@ export class MongoAttendanceRepository implements AttendanceRepository {
       to,
       sortDir = 'desc',
     } = params;
+
+    console.log(
+      '🟠 [MongoAttendanceRepository.getAttendances] Conectando a MongoDB...',
+    );
     const db = await connectMongo();
+    console.log(
+      '🟠 [MongoAttendanceRepository.getAttendances] Conexión a MongoDB establecida',
+    );
+
     const col = this.getCollection(db);
     const filter: Filter<AttendanceDocument> = {};
     if (userId !== undefined) filter.userId = userId;
@@ -129,11 +142,44 @@ export class MongoAttendanceRepository implements AttendanceRepository {
       if (from) filter.attendanceTime.$gte = from;
       if (to) filter.attendanceTime.$lte = to;
     }
+
+    console.log(
+      '🟠 [MongoAttendanceRepository.getAttendances] Filtro construido:',
+      JSON.stringify(filter),
+    );
+
     const skip = (page - 1) * limit;
     const sortSpec = { attendanceTime: sortDir === 'asc' ? 1 : -1 } as const;
+
+    console.log(
+      '🟠 [MongoAttendanceRepository.getAttendances] Ejecutando consulta - skip:',
+      skip,
+      'limit:',
+      limit,
+      'sort:',
+      sortDir,
+    );
+
     const cursor = col.find(filter).sort(sortSpec).skip(skip).limit(limit);
     const docs = await cursor.toArray();
+    console.log(
+      '🟠 [MongoAttendanceRepository.getAttendances] Documentos obtenidos:',
+      docs.length,
+    );
+
+    console.log(
+      '🟠 [MongoAttendanceRepository.getAttendances] Contando total de documentos...',
+    );
     const total = await col.countDocuments(filter);
+    console.log(
+      '🟢 [MongoAttendanceRepository.getAttendances] FIN - Total:',
+      total,
+      'Página:',
+      page,
+      'Documentos en página:',
+      docs.length,
+    );
+
     return { data: docs.map((d) => this.map(d)), total, page, limit };
   }
 }

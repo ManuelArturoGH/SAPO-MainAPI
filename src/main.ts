@@ -3,11 +3,59 @@ import { AppModule } from './app.module';
 import { config } from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Request, Response, NextFunction } from 'express';
 
 config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Middleware para loggear todas las peticiones HTTP
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const timestamp = new Date().toISOString();
+    console.log('');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log(`🌐 [HTTP REQUEST] ${timestamp}`);
+    console.log(`🌐 [HTTP] Método: ${req.method}`);
+    console.log(`🌐 [HTTP] URL: ${req.url}`);
+    console.log(`🌐 [HTTP] Path: ${req.path}`);
+    console.log(
+      `🌐 [HTTP] Origin: ${req.headers.origin ?? 'No origin header'}`,
+    );
+    console.log(`🌐 [HTTP] Referer: ${req.headers.referer ?? 'No referer'}`);
+    console.log(`🌐 [HTTP] Query params:`, req.query);
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('');
+
+    const originalSend = res.send.bind(res) as (data: unknown) => Response;
+    res.send = function (data: unknown): Response {
+      console.log('');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log(`🌐 [HTTP RESPONSE] ${timestamp}`);
+      console.log(`🌐 [HTTP RESPONSE] Status: ${res.statusCode}`);
+      console.log(`🌐 [HTTP RESPONSE] Path: ${req.method} ${req.path}`);
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('');
+      return originalSend(data);
+    } as typeof res.send;
+
+    next();
+  });
+
+  // Enable CORS
+  app.enableCors({
+    origin: [
+      'https://sapo-web-app.test-apis-web-app.cloud',
+      'http://sapo-web-app.test-apis-web-app.cloud',
+    ],
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: '*',
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    maxAge: 3600,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

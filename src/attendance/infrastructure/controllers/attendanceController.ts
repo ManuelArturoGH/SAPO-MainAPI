@@ -26,9 +26,18 @@ export class AttendanceController {
   })
   @ApiResponse({ status: 200, description: 'Listado paginado' })
   async list(@Query() q: GetAttendanceQueryDto) {
+    console.log('🔵 [AttendanceController.list] INICIO - Petición recibida');
+    console.log(
+      '🔵 [AttendanceController.list] Query params:',
+      JSON.stringify(q),
+    );
+
     if (q.from && q.to && q.from > q.to) {
+      console.log('🔴 [AttendanceController.list] ERROR - from > to');
       throw new BadRequestException('from debe ser menor o igual a to');
     }
+
+    console.log('🔵 [AttendanceController.list] Ejecutando listUseCase...');
     const res = await this.listUseCase.execute({
       page: q.page,
       limit: q.limit,
@@ -38,9 +47,21 @@ export class AttendanceController {
       to: q.to,
       sortDir: q.sortDir,
     });
+    console.log(
+      '🔵 [AttendanceController.list] Resultado del use case - Total:',
+      res.total,
+      'Items:',
+      res.data.length,
+    );
 
-    // Map userId -> { name, position } using employees.externalId
+    // Map userId -> { name, position} using employees.externalId
+    console.log('🔵 [AttendanceController.list] Obteniendo empleados...');
     const employees = (await this.getAllEmployeesUseCase.execute()) || [];
+    console.log(
+      '🔵 [AttendanceController.list] Empleados obtenidos:',
+      employees.length,
+    );
+
     const idToInfo = new Map<number, { name: string; position: string }>();
     for (const e of employees) {
       const ext = e.externalId;
@@ -51,7 +72,8 @@ export class AttendanceController {
         });
     }
 
-    return {
+    console.log('🔵 [AttendanceController.list] Mapeando datos...');
+    const result = {
       data: res.data.map((a) => ({
         id: a.id,
         attendanceMachineID: a.attendanceMachineID,
@@ -63,6 +85,12 @@ export class AttendanceController {
       })),
       meta: { total: res.total, page: res.page, limit: res.limit },
     };
+    console.log(
+      '🟢 [AttendanceController.list] FIN - Retornando respuesta con',
+      result.data.length,
+      'registros',
+    );
+    return result;
   }
 
   @Get('export')
@@ -72,7 +100,14 @@ export class AttendanceController {
     @Query() q: ExportAttendanceQueryDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log('🔵 [AttendanceController.export] INICIO - Petición recibida');
+    console.log(
+      '🔵 [AttendanceController.export] Query params:',
+      JSON.stringify(q),
+    );
+
     if (q.from && q.to && q.from > q.to) {
+      console.log('🔴 [AttendanceController.export] ERROR - from > to');
       throw new BadRequestException('from debe ser menor o igual a to');
     }
 
