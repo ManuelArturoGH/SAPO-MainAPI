@@ -8,6 +8,14 @@ config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Enable CORS
+  app.enableCors({
+    origin: 'https://sapo-web-app.test-apis-web-app.cloud',
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -44,7 +52,7 @@ async function bootstrap() {
       await app.listen(fallback, host);
 
       console.log(
-        `Server started on http://${host}:${fallback} (fallback due to EADDRINUSE)`,
+        `Server started on https://${host}:${fallback} (fallback due to EADDRINUSE)`,
       );
     } else {
       throw err;
