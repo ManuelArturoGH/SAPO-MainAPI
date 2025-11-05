@@ -42,21 +42,6 @@ async function bootstrap() {
     next();
   });
 
-  // Enable CORS
-  app.enableCors({
-    origin: [
-      'https://sapo-web-app.test-apis-web-app.cloud',
-      'http://sapo-web-app.test-apis-web-app.cloud',
-    ],
-    credentials: true,
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: '*',
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-    maxAge: 3600,
-  });
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
