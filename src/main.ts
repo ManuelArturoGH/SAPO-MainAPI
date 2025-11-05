@@ -15,6 +15,8 @@ async function bootstrap() {
     'http://sapo-web-app.test-apis-web-app.cloud',
     'https://sapo-api-app.test-apis-web-app.cloud',
     'http://sapo-api-app.test-apis-web-app.cloud',
+    // También agregar dominios de Vercel por si acaso
+    /https:\/\/.*\.vercel\.app$/,
   ];
 
   app.enableCors({
