@@ -9,11 +9,39 @@ config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS
+  // Enable CORS with strict origin validation
+  const allowedOrigins = [
+    'https://sapo-web-app.test-apis-web-app.cloud',
+    'http://sapo-web-app.test-apis-web-app.cloud',
+  ];
+
   app.enableCors({
-    origin: 'https://sapo-web-app.test-apis-web-app.cloud',
+    origin: (
+      requestOrigin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // Reject requests with no origin
+      if (!requestOrigin) {
+        return callback(new Error('No origin header present'), false);
+      }
+
+      if (allowedOrigins.includes(requestOrigin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'), false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+    ],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 3600,
   });
 
   app.useGlobalPipes(
