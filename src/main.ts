@@ -13,6 +13,8 @@ async function bootstrap() {
   const allowedOrigins = [
     'https://sapo-web-app.test-apis-web-app.cloud',
     'http://sapo-web-app.test-apis-web-app.cloud',
+    'https://sapo-api-app.test-apis-web-app.cloud',
+    'http://sapo-api-app.test-apis-web-app.cloud',
   ];
 
   app.enableCors({
@@ -20,14 +22,15 @@ async function bootstrap() {
       requestOrigin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      // Reject requests with no origin
+      // Allow requests with no origin (direct browser access, testing)
       if (!requestOrigin) {
-        return callback(new Error('No origin header present'), false);
+        return callback(null, true);
       }
 
       if (allowedOrigins.includes(requestOrigin)) {
         callback(null, true);
       } else {
+        console.log(`CORS blocked origin: ${requestOrigin}`);
         callback(new Error('Not allowed by CORS'), false);
       }
     },
