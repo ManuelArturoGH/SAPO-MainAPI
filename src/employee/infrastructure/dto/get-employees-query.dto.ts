@@ -21,10 +21,10 @@ export class GetEmployeesQueryDto {
   page = 1;
 
   @ApiPropertyOptional({
-    example: 25,
+    example: 500,
     description: 'Límite por página (1-100)',
   })
-  @Transform(({ value }) => (value === undefined ? 25 : parseInt(value, 10)))
+  @Transform(({ value }) => (value === undefined ? 500 : parseInt(value, 10)))
   @IsInt()
   @Min(1)
   @Max(100)

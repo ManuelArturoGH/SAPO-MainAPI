@@ -51,7 +51,7 @@ export class EmployeeIdController {
       isActive: emp.isActive,
       department: emp.department,
       position: emp.position,
-      profileImageUrl: emp.profileImageUrl,
+      profileImageUrl: emp.profile,
       createdAt: emp.createdAt,
     };
   }
@@ -72,7 +72,7 @@ export class EmployeeIdController {
         isActive: updated.isActive,
         department: updated.department,
         position: updated.position,
-        profileImageUrl: updated.profileImageUrl,
+        profileImageUrl: updated.profile,
         createdAt: updated.createdAt,
       },
     };
@@ -119,7 +119,7 @@ export class EmployeeIdController {
         isActive: updated.isActive,
         department: updated.department,
         position: updated.position,
-        profileImageUrl: updated.profileImageUrl,
+        profileImageUrl: updated.profile,
         createdAt: updated.createdAt,
       },
     };
@@ -160,7 +160,7 @@ export class EmployeeIdController {
         isActive: updated.isActive,
         department: updated.department,
         position: updated.position,
-        profileImageUrl: updated.profileImageUrl,
+        profileImageUrl: updated.profile,
         createdAt: updated.createdAt,
       },
     };
@@ -189,7 +189,7 @@ export class EmployeeIdController {
         isActive: updated.isActive,
         department: updated.department,
         position: updated.position,
-        profileImageUrl: updated.profileImageUrl,
+        profileImageUrl: updated.profile,
         createdAt: updated.createdAt,
       },
     };
@@ -218,7 +218,7 @@ export class EmployeeIdController {
         isActive: updated.isActive,
         department: updated.department,
         position: updated.position,
-        profileImageUrl: updated.profileImageUrl,
+        profileImageUrl: updated.profile,
         createdAt: updated.createdAt,
       },
     };

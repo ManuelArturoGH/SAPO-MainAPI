@@ -62,11 +62,16 @@ export class AttendanceController {
       employees.length,
     );
 
-    const idToInfo = new Map<number, { name: string; position: string }>();
+
+    const idToInfo = new Map<
+      number,
+      { profileImageUrl: string; name: string; position: string }
+    >();
     for (const e of employees) {
       const ext = e.externalId;
       if (typeof ext === 'number')
         idToInfo.set(ext, {
+          profileImageUrl: e.profile ? e.profile : '',
           name: e.name,
           position: e.position ?? 'sin asignar',
         });
@@ -77,6 +82,7 @@ export class AttendanceController {
       data: res.data.map((a) => ({
         id: a.id,
         attendanceMachineID: a.attendanceMachineID,
+        profileImageUrl: idToInfo.get(a.userId)?.profileImageUrl ?? '',
         userName: idToInfo.get(a.userId)?.name ?? String(a.userId),
         position: idToInfo.get(a.userId)?.position ?? 'sin asignar',
         attendanceTime: a.attendanceTime,

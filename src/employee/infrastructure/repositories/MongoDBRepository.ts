@@ -27,14 +27,13 @@ export class MongoDBRepository implements EmployeeRepository {
   private mapDoc(doc: EmployeeDocument): Employee {
     return new Employee(
       doc._id.toHexString(),
-      doc.profile ? doc.profile : '',
+      doc.profileImageUrl ? doc.profileImageUrl : '',
       doc.name,
       doc.isActive,
       doc.department,
       doc.createdAt ?? new Date(),
       doc.externalId,
       doc.position || 'sin asignar',
-      doc.profileImageUrl,
     );
   }
 

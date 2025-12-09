@@ -2,14 +2,13 @@ export class Employee {
   // Constructor base (usado por repositorio y tests)
   constructor(
     private readonly _id: string | null,
-    private profile: string,
+    private _profile: string,
     private _name: string,
     private _isActive: boolean,
     private _department: string,
     private readonly _createdAt: Date = new Date(),
     private readonly _externalId?: number,
     private _position: string = 'sin asignar',
-    private _profileImageUrl?: string,
   ) {}
 
   // Fábrica para crear nuevos empleados (sin ID todavía)
@@ -53,8 +52,8 @@ export class Employee {
     return this._position;
   }
 
-  get profileImageUrl(): string | undefined {
-    return this._profileImageUrl;
+  get profile(): string | undefined {
+    return this._profile;
   }
 
   // Métodos de mutación controlada (opcional)
@@ -73,7 +72,7 @@ export class Employee {
     if (data.position !== undefined && data.position.trim() !== '')
       this._position = data.position;
     if (data.profileImageUrl !== undefined)
-      this._profileImageUrl = data.profileImageUrl;
+      this._profile = data.profileImageUrl;
     return this;
   }
 }
