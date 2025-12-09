@@ -18,6 +18,7 @@ export class UpdateEmployeeUseCase {
       department: string;
       isActive: boolean;
       position: string;
+      profileImageUrl: string;
     }>,
   ): Promise<Employee | null> {
     try {

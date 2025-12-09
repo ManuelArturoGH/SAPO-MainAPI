@@ -2,15 +2,17 @@ export class Employee {
   // Constructor base (usado por repositorio y tests)
   constructor(
     private readonly _id: string | null,
+    private profile: string,
     private _name: string,
     private _isActive: boolean,
     private _department: string,
     private readonly _createdAt: Date = new Date(),
     private readonly _externalId?: number,
     private _position: string = 'sin asignar',
+    private _profileImageUrl?: string,
   ) {}
 
-  // Fábrica para crear nuevos empleados (sin id todavía)
+  // Fábrica para crear nuevos empleados (sin ID todavía)
   static createNew(
     name: string,
     department: string,
@@ -19,6 +21,7 @@ export class Employee {
   ): Employee {
     return new Employee(
       null,
+      '',
       name,
       isActive,
       department,
@@ -50,6 +53,10 @@ export class Employee {
     return this._position;
   }
 
+  get profileImageUrl(): string | undefined {
+    return this._profileImageUrl;
+  }
+
   // Métodos de mutación controlada (opcional)
   update(
     data: Partial<{
@@ -57,6 +64,7 @@ export class Employee {
       department: string;
       isActive: boolean;
       position: string;
+      profileImageUrl: string;
     }>,
   ): Employee {
     if (data.name !== undefined) this._name = data.name;
@@ -64,6 +72,8 @@ export class Employee {
     if (data.isActive !== undefined) this._isActive = data.isActive;
     if (data.position !== undefined && data.position.trim() !== '')
       this._position = data.position;
+    if (data.profileImageUrl !== undefined)
+      this._profileImageUrl = data.profileImageUrl;
     return this;
   }
 }

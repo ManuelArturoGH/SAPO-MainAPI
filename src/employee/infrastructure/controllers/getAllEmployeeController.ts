@@ -27,6 +27,7 @@ export class GetAllEmployeeController {
         isActive: e.isActive,
         department: e.department,
         position: e.position,
+        profileImageUrl: e.profileImageUrl,
       })),
       meta: {
         total: Number(result.total),

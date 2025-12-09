@@ -6,12 +6,14 @@ import type { EmployeeRepository } from '../../domain/interfaces/employeeReposit
 
 interface EmployeeDocument {
   _id: ObjectId;
+  profile?: string;
   name: string;
   isActive: boolean;
   department: string;
   createdAt: Date;
   externalId?: number; // Nuevo campo opcional para registros sincronizados
   position?: string; // Nuevo campo para el puesto
+  profileImageUrl?: string; // URL de la imagen de perfil en Cloudinary
 }
 
 @Injectable()
@@ -25,12 +27,14 @@ export class MongoDBRepository implements EmployeeRepository {
   private mapDoc(doc: EmployeeDocument): Employee {
     return new Employee(
       doc._id.toHexString(),
+      doc.profile ? doc.profile : '',
       doc.name,
       doc.isActive,
       doc.department,
       doc.createdAt ?? new Date(),
       doc.externalId,
       doc.position || 'sin asignar',
+      doc.profileImageUrl,
     );
   }
 
@@ -133,6 +137,7 @@ export class MongoDBRepository implements EmployeeRepository {
       department: string;
       isActive: boolean;
       position: string;
+      profileImageUrl: string;
     }>,
   ): Promise<Employee | null> {
     const db = await connectMongo();
@@ -144,6 +149,8 @@ export class MongoDBRepository implements EmployeeRepository {
     if (data.isActive !== undefined) update.isActive = data.isActive;
     if (data.position !== undefined)
       update.position = data.position || 'sin asignar';
+    if (data.profileImageUrl !== undefined)
+      update.profileImageUrl = data.profileImageUrl;
     if (Object.keys(update).length === 0) return this.getEmployeeById(id);
 
     const updateResult = await collection.updateOne(

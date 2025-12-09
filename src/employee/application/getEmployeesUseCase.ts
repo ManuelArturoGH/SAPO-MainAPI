@@ -31,7 +31,7 @@ export class GetEmployeesUseCase {
 
   async execute(params: GetEmployeesParams): Promise<PaginatedEmployeesResult> {
     const page = params.page && params.page > 0 ? params.page : 1;
-    const limit = params.limit && params.limit > 0 ? params.limit : 25;
+    const limit = params.limit && params.limit > 0 ? params.limit : 200;
     const {
       department,
       isActive,

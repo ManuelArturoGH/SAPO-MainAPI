@@ -20,6 +20,7 @@ export interface EmployeeRepository {
       department: string;
       isActive: boolean;
       position: string;
+      profileImageUrl: string;
     }>,
   ): Promise<Employee | null>;
   softDeleteEmployee(id: string): Promise<Employee | null>;

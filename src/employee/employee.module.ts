@@ -12,6 +12,7 @@ import { EmployeeIdController } from './infrastructure/controllers/employeeIdCon
 import { CacheService } from './infrastructure/services/cache.service';
 import { IndexInitializerService } from './infrastructure/services/index-initializer.service';
 import { ExternalEmployeeSyncService } from './infrastructure/services/external-sync.service';
+import { CloudinaryService } from './infrastructure/services/cloudinary.service';
 import { DeviceModule } from '../device/device.module';
 import { EmployeeSyncController } from './infrastructure/controllers/employeeSyncController';
 
@@ -33,6 +34,7 @@ import { EmployeeSyncController } from './infrastructure/controllers/employeeSyn
     CacheService,
     IndexInitializerService,
     ExternalEmployeeSyncService,
+    CloudinaryService,
     { provide: 'EmployeeRepository', useClass: MongoDBRepository },
   ],
   exports: [

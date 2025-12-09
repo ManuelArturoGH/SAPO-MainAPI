@@ -36,4 +36,12 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @MaxLength(100)
   position?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+    description: 'URL de la imagen de perfil (opcional)',
+  })
+  @IsString()
+  @IsOptional()
+  profileImageUrl?: string;
 }
