@@ -1,15 +1,23 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { EmployeeModule } from './employee/employee.module';
-import { AppLifecycle } from './appLifecycle';
-import { DeviceModule } from './device/device.module';
-import { AttendanceModule } from './attendance/attendance.module';
+import { ConfigModule } from './config/config.module';
+import { DatabaseModule } from './database/database.module';
 import { SharedModule } from './shared';
+import { EmployeesModule } from './modules/employees/employees.module';
+import { DevicesModule } from './modules/devices/devices.module';
+import { AttendancesModule } from './modules/attendances/attendances.module';
 
 @Module({
-  imports: [SharedModule, EmployeeModule, DeviceModule, AttendanceModule],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    SharedModule,
+    DevicesModule,
+    EmployeesModule,
+    AttendancesModule,
+  ],
   controllers: [AppController],
-  providers: [AppService, AppLifecycle],
+  providers: [AppService],
 })
 export class AppModule {}

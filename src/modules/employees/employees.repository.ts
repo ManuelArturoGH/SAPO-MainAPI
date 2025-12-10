@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { connectMongo } from '../../../database/mongodb.provider';
+import { connectMongo } from '../../database/mongodb.provider';
 import { Collection, ObjectId, Db, UpdateResult } from 'mongodb';
-import { Employee } from '../../domain/models/employee';
-import type { EmployeeRepository } from '../../domain/interfaces/employeeRepository';
+import { Employee } from './entities/employee.entity';
+import type { EmployeeRepository } from './interfaces/employee-repository.interface';
 
 interface EmployeeDocument {
   _id: ObjectId;
@@ -11,13 +11,13 @@ interface EmployeeDocument {
   isActive: boolean;
   department: string;
   createdAt: Date;
-  externalId?: number; // Nuevo campo opcional para registros sincronizados
-  position?: string; // Nuevo campo para el puesto
-  profileImageUrl?: string; // URL de la imagen de perfil en Cloudinary
+  externalId?: number;
+  position?: string;
+  profileImageUrl?: string;
 }
 
 @Injectable()
-export class MongoDBRepository implements EmployeeRepository {
+export class EmployeesRepository implements EmployeeRepository {
   private getCollection(db: Db): Collection<EmployeeDocument> {
     return db.collection<EmployeeDocument>('employees');
   }
@@ -171,7 +171,7 @@ export class MongoDBRepository implements EmployeeRepository {
     return this.getEmployeeById(id);
   }
 
-  // Upsert usado por la sincronización externa (no expuesto en interfaz pública)
+  // Métodos adicionales para sincronización externa
   async upsertExternalEmployee(data: {
     externalId: number;
     name: string;

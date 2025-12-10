@@ -4,22 +4,34 @@ import {
   Query,
   Res,
   BadRequestException,
+  Post,
+  Body,
 } from '@nestjs/common';
-import { GetAttendancesUseCase } from '../../application/getAttendancesUseCase';
-import { GetAttendanceQueryDto } from '../dto/get-attendance-query.dto';
-import { ExportAttendanceQueryDto } from '../dto/export-attendance-query.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { GetAllEmployeeUseCase } from '../../../employee/application/getAllEmployeeUseCase';
+import { AttendancesService } from './attendances.service';
+import { EmployeesService } from '../employees/employees.service';
+import { ExternalAttendanceSyncService } from './services/external-attendance-sync.service';
+import { GetAttendanceQueryDto } from './dto/get-attendance-query.dto';
+import { ExportAttendanceQueryDto } from './dto/export-attendance-query.dto';
+import { IsDateString, IsInt, IsOptional, Max, Min } from 'class-validator';
+
+class ManualAttendanceSyncDto {
+  @IsInt() @Min(1) @Max(254) @IsOptional() machineNumber?: number;
+  @IsDateString() @IsOptional() from?: string;
+  @IsDateString() @IsOptional() to?: string;
+}
 
 @ApiTags('attendances')
 @Controller('attendances')
-export class AttendanceController {
+export class AttendancesController {
   constructor(
-    private readonly listUseCase: GetAttendancesUseCase,
-    private readonly getAllEmployeesUseCase: GetAllEmployeeUseCase,
+    private readonly attendancesService: AttendancesService,
+    private readonly employeesService: EmployeesService,
+    private readonly syncService: ExternalAttendanceSyncService,
   ) {}
 
+  // GET /attendances - Listar asistencias
   @Get()
   @ApiOperation({
     summary: 'Listar asistencias con paginación y filtros básicos',
@@ -30,7 +42,7 @@ export class AttendanceController {
       throw new BadRequestException('from debe ser menor o igual a to');
     }
 
-    const res = await this.listUseCase.execute({
+    const res = await this.attendancesService.getAttendances({
       page: q.page,
       limit: q.limit,
       userId: q.userId,
@@ -40,7 +52,7 @@ export class AttendanceController {
       sortDir: q.sortDir,
     });
 
-    const employees = (await this.getAllEmployeesUseCase.execute()) || [];
+    const employees = (await this.employeesService.getAllEmployees()) || [];
 
     const idToInfo = new Map<
       number,
@@ -71,6 +83,7 @@ export class AttendanceController {
     };
   }
 
+  // GET /attendances/export - Exportar asistencias
   @Get('export')
   @ApiOperation({ summary: 'Exportar asistencias a CSV o JSON' })
   @ApiResponse({ status: 200, description: 'Archivo exportado' })
@@ -78,18 +91,10 @@ export class AttendanceController {
     @Query() q: ExportAttendanceQueryDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    console.log('🔵 [AttendanceController.export] INICIO - Petición recibida');
-    console.log(
-      '🔵 [AttendanceController.export] Query params:',
-      JSON.stringify(q),
-    );
-
     if (q.from && q.to && q.from > q.to) {
-      console.log('🔴 [AttendanceController.export] ERROR - from > to');
       throw new BadRequestException('from debe ser menor o igual a to');
     }
 
-    // Ensure day-range behavior: if only from is given, use same-day end for to
     const from = q.from;
     let to = q.to;
     if (from && !to) {
@@ -98,7 +103,7 @@ export class AttendanceController {
       to = end;
     }
 
-    const result = await this.listUseCase.execute({
+    const result = await this.attendancesService.getAttendances({
       page: q.page,
       limit: q.limit,
       userId: q.userId,
@@ -109,7 +114,7 @@ export class AttendanceController {
     });
 
     // Build userId -> { name, position } map
-    const employees = (await this.getAllEmployeesUseCase.execute()) || [];
+    const employees = (await this.employeesService.getAllEmployees()) || [];
     const idToInfo = new Map<number, { name: string; position: string }>();
     for (const e of employees) {
       const ext = e.externalId;
@@ -149,7 +154,6 @@ export class AttendanceController {
         'Content-Disposition',
         'attachment; filename="attendances.json"',
       );
-      // Return only selected keys in header order for JSON consistency
       return rows.map((r) => ({
         id: r.id,
         attendanceMachineID: r.attendanceMachineID,
@@ -171,11 +175,48 @@ export class AttendanceController {
       ),
     ].join('\n');
 
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Type', 'text/csv');
     res.setHeader(
       'Content-Disposition',
       'attachment; filename="attendances.csv"',
     );
     return csv;
+  }
+
+  // POST /attendances/sync - Sincronización manual
+  @Post('sync')
+  @ApiOperation({
+    summary:
+      'Disparar sincronización manual de asistencias (opcional: machineNumber, from, to)',
+  })
+  @ApiResponse({ status: 200 })
+  async sync(
+    @Body() dto: ManualAttendanceSyncDto,
+    @Query('machineNumber') q?: string,
+    @Query('from') qFrom?: string,
+    @Query('to') qTo?: string,
+  ) {
+    const machineNumber =
+      dto.machineNumber ?? (q !== undefined ? parseInt(q, 10) : undefined);
+    if (q !== undefined && Number.isNaN(machineNumber))
+      throw new BadRequestException('machineNumber inválido');
+    const from = dto.from ?? qFrom;
+    const to = dto.to ?? qTo;
+    if (from && to) {
+      const fromDate = new Date(from);
+      const toDate = new Date(to);
+      if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+        throw new BadRequestException('from/to deben ser fechas válidas (ISO)');
+      }
+      if (fromDate > toDate)
+        throw new BadRequestException('from debe ser menor o igual a to');
+    }
+    await this.syncService.triggerManual(machineNumber, from, to);
+    return {
+      message: 'Attendance manual sync triggered',
+      machineNumber: machineNumber ?? 'all',
+      from: from ?? null,
+      to: to ?? null,
+    };
   }
 }

@@ -1,9 +1,11 @@
 import { Global, Module } from '@nestjs/common';
-import { RequestQueueService } from './request-queue.service';
+import { RequestQueueService } from './services/request-queue.service';
+import { CacheService } from './services/cache.service';
+import { CloudinaryService } from './services/cloudinary.service';
 
 @Global()
 @Module({
-  providers: [RequestQueueService],
-  exports: [RequestQueueService],
+  providers: [RequestQueueService, CacheService, CloudinaryService],
+  exports: [RequestQueueService, CacheService, CloudinaryService],
 })
 export class SharedModule {}

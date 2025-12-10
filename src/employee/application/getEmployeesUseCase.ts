@@ -56,7 +56,6 @@ export class GetEmployeesUseCase {
         const cached =
           this.cacheService?.get<PaginatedEmployeesResult>(cacheKey);
         if (cached) {
-          this.logger.verbose?.('Cache hit employees list');
           return cached;
         }
       }

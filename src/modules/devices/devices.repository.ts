@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Collection, Db, ObjectId } from 'mongodb';
-import { connectMongo } from '../../../database/mongodb.provider';
-import { Device } from '../../domain/models/device';
-import type { DeviceRepository } from '../../domain/interfaces/deviceRepository';
+import { connectMongo } from '../../database/mongodb.provider';
+import { Device } from './entities/device.entity';
+import type { DeviceRepository } from './interfaces/device-repository.interface';
 
 interface DeviceDocument {
   _id: ObjectId;
@@ -13,7 +13,7 @@ interface DeviceDocument {
 }
 
 @Injectable()
-export class MongoDeviceRepository implements DeviceRepository {
+export class DevicesRepository implements DeviceRepository {
   private getCollection(db: Db): Collection<DeviceDocument> {
     return db.collection<DeviceDocument>('devices');
   }

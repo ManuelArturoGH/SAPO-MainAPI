@@ -14,13 +14,8 @@ export class AddEmployeeUseCase {
 
   async execute(_employee: Employee): Promise<Employee | null> {
     try {
-      this.logger.debug(
-        `Adding employee ${_employee.name} (${_employee.department})`,
-      );
       const created = await this.employeeRepository.addEmployee(_employee);
-      if (!created) {
-        this.logger.warn('Employee repository returned null on add');
-      } else {
+      if (created) {
         this.cacheService?.invalidateEmployeeLists();
       }
       return created;

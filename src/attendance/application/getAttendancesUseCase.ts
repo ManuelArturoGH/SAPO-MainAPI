@@ -28,11 +28,6 @@ export class GetAttendancesUseCase {
   async execute(
     params: GetAttendanceParams = {},
   ): Promise<PaginatedAttendances> {
-    console.log(
-      '🟡 [GetAttendancesUseCase.execute] INICIO - Parámetros recibidos:',
-      JSON.stringify(params),
-    );
-
     const page = params.page && params.page > 0 ? params.page : 1;
     const limit = params.limit && params.limit > 0 ? params.limit : 25;
     const sortDir =
@@ -40,20 +35,8 @@ export class GetAttendancesUseCase {
         ? params.sortDir
         : 'desc';
 
-    console.log(
-      '🟡 [GetAttendancesUseCase.execute] Parámetros procesados - page:',
-      page,
-      'limit:',
-      limit,
-      'sortDir:',
-      sortDir,
-    );
-
     try {
-      console.log(
-        '🟡 [GetAttendancesUseCase.execute] Llamando al repositorio...',
-      );
-      const result = await this.repo.getAttendances({
+      return await this.repo.getAttendances({
         page,
         limit,
         userId: params.userId,
@@ -62,15 +45,7 @@ export class GetAttendancesUseCase {
         to: params.to,
         sortDir,
       });
-      console.log(
-        '🟢 [GetAttendancesUseCase.execute] FIN - Resultado del repositorio - Total:',
-        result.total,
-        'Items:',
-        result.data.length,
-      );
-      return result;
     } catch (e) {
-      console.error('🔴 [GetAttendancesUseCase.execute] ERROR:', e);
       this.logger.error('Error getting attendances', e as Error);
       return { data: [], total: 0, page, limit };
     }

@@ -12,8 +12,7 @@ export class GetAllEmployeeUseCase {
   async execute(): Promise<Employee[] | null> {
     try {
       return await this.employeeRepository.getAllEmployees();
-    } catch (error) {
-      console.error('Error getting employees:', error);
+    } catch {
       return null;
     }
   }

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Collection, Db, ObjectId } from 'mongodb';
-import { connectMongo } from '../../../database/mongodb.provider';
-import type { AttendanceRepository } from '../../domain/interfaces/attendanceRepository';
-import { Attendance } from '../../domain/models/attendance';
+import { connectMongo } from '../../database/mongodb.provider';
+import type { AttendanceRepository } from './interfaces/attendance-repository.interface';
+import { Attendance } from './entities/attendance.entity';
 import { Filter } from 'mongodb';
 
 interface AttendanceDocument {
@@ -16,7 +16,7 @@ interface AttendanceDocument {
 }
 
 @Injectable()
-export class MongoAttendanceRepository implements AttendanceRepository {
+export class AttendancesRepository implements AttendanceRepository {
   private getCollection(db: Db): Collection<AttendanceDocument> {
     return db.collection<AttendanceDocument>('attendances');
   }
