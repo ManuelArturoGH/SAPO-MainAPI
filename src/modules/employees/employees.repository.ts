@@ -30,7 +30,7 @@ export class EmployeesRepository implements EmployeeRepository {
       doc.isActive,
       doc.department,
       doc.createdAt ?? new Date(),
-      doc.externalId,
+      parseInt(doc.externalId as unknown as string, 10),
       doc.position || 'sin asignar',
     );
   }

@@ -53,7 +53,6 @@ export class AttendancesController {
     });
 
     const employees = (await this.employeesService.getAllEmployees()) || [];
-
     const idToInfo = new Map<
       number,
       { profileImageUrl: string; name: string; position: string }
@@ -68,18 +67,21 @@ export class AttendancesController {
         });
     }
 
+    const data = res.data.map((a) => ({
+      id: a.id,
+      attendanceMachineID: a.attendanceMachineID,
+      profileImageUrl: idToInfo.get(a.userId)?.profileImageUrl ?? '',
+      userName: idToInfo.get(a.userId)?.name ?? String(a.userId),
+      position: idToInfo.get(a.userId)?.position ?? 'sin asignar',
+      attendanceTime: a.attendanceTime,
+      accessMode: a.accessMode,
+      attendanceStatus: a.attendanceStatus,
+    }));
+    const meta = { total: res.total, page: res.page, limit: res.limit };
+
     return {
-      data: res.data.map((a) => ({
-        id: a.id,
-        attendanceMachineID: a.attendanceMachineID,
-        profileImageUrl: idToInfo.get(a.userId)?.profileImageUrl ?? '',
-        userName: idToInfo.get(a.userId)?.name ?? String(a.userId),
-        position: idToInfo.get(a.userId)?.position ?? 'sin asignar',
-        attendanceTime: a.attendanceTime,
-        accessMode: a.accessMode,
-        attendanceStatus: a.attendanceStatus,
-      })),
-      meta: { total: res.total, page: res.page, limit: res.limit },
+      data,
+      meta,
     };
   }
 
