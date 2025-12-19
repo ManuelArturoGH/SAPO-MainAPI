@@ -6,8 +6,14 @@ import {
   BadRequestException,
   Post,
   Body,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AttendancesService } from './attendances.service';
 import { EmployeesService } from '../employees/employees.service';
@@ -15,6 +21,7 @@ import { ExternalAttendanceSyncService } from './services/external-attendance-sy
 import { GetAttendanceQueryDto } from './dto/get-attendance-query.dto';
 import { ExportAttendanceQueryDto } from './dto/export-attendance-query.dto';
 import { IsDateString, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 class ManualAttendanceSyncDto {
   @IsInt() @Min(1) @Max(254) @IsOptional() machineNumber?: number;
@@ -23,6 +30,8 @@ class ManualAttendanceSyncDto {
 }
 
 @ApiTags('attendances')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('attendances')
 export class AttendancesController {
   constructor(

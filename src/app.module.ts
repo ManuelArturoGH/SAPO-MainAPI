@@ -4,17 +4,16 @@ import { AppService } from './app.service';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { SharedModule } from './shared';
-import { EmployeesModule } from './modules/employees/employees.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { AttendancesModule } from './modules/attendances/attendances.module';
-
+import { AuthModule } from './modules/auth/auth.module';
 @Module({
   imports: [
     ConfigModule,
     DatabaseModule,
     SharedModule,
     DevicesModule,
-    EmployeesModule,
+    AuthModule,
     AttendancesModule,
   ],
   controllers: [AppController],
