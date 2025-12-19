@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   NotFoundException,
   UseInterceptors,
   UploadedFile,
@@ -18,6 +19,7 @@ import {
   ApiTags,
   ApiConsumes,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { EmployeesService } from './employees.service';
 import { CloudinaryService } from '../../shared';
@@ -27,6 +29,7 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UpdateEmployeePositionDto } from './dto/update-employee-position.dto';
 import { UpdateEmployeeDepartmentDto } from './dto/update-employee-department.dto';
 import { UpdateEmployeeIsActiveDto } from './dto/update-employee-isactive.dto';
+import { ExternalEmployeeSyncService } from './services/external-sync.service';
 
 @ApiTags('employees')
 @Controller('employees')
@@ -34,7 +37,39 @@ export class EmployeesController {
   constructor(
     private readonly employeesService: EmployeesService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly syncService: ExternalEmployeeSyncService,
   ) {}
+
+  // POST /employees/sync - Sincronización manual de empleados desde dispositivos
+  @Post('sync')
+  @ApiOperation({
+    summary:
+      'Disparar sincronización manual de empleados desde dispositivos de control de asistencias (opcional: machineNumber)',
+  })
+  @ApiQuery({
+    name: 'machineNumber',
+    required: false,
+    type: Number,
+    description:
+      'Número de máquina específico (1-254). Si no se indica, sincroniza todos los dispositivos.',
+  })
+  @ApiResponse({ status: 200, description: 'Sincronización ejecutada' })
+  @ApiResponse({ status: 400, description: 'machineNumber inválido' })
+  @ApiResponse({ status: 404, description: 'Dispositivo no encontrado' })
+  async sync(@Query('machineNumber') machineNumber?: string) {
+    const mn =
+      machineNumber !== undefined ? parseInt(machineNumber, 10) : undefined;
+    if (machineNumber !== undefined && (Number.isNaN(mn) || mn === undefined)) {
+      throw new BadRequestException('machineNumber debe ser un número válido');
+    }
+    const result = await this.syncService.triggerManual(mn);
+    return {
+      message: 'Employee sync triggered',
+      machineNumber: mn ?? 'all',
+      stats: result.stats,
+      employeesCount: result.employees.length,
+    };
+  }
 
   // GET /employees - Listar todos los empleados
   @Get()
