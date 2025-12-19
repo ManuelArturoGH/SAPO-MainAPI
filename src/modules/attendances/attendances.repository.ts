@@ -68,11 +68,10 @@ export class AttendancesRepository implements AttendanceRepository {
     const col = this.getCollection(db);
     const now = new Date();
     const ops = atts.map((att) => {
-      const when = new Date(att.attendanceTime);
       const filter = {
         attendanceMachineID: att.attendanceMachineID,
         userId: att.userId,
-        attendanceTime: when,
+        attendanceTime: att.attendanceTime,
       } as const;
       return {
         updateOne: {

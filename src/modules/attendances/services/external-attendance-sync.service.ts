@@ -238,7 +238,7 @@ export class ExternalAttendanceSyncService
       'attTime',
       'punch_time',
     ]);
-    const attendanceTime = this.normalizeDate(timeRaw as any);
+    const attendanceTime = this.normalizeDate(timeRaw as Date);
 
     if (
       !Number.isFinite(machine as any) ||
@@ -315,6 +315,9 @@ export class ExternalAttendanceSyncService
 
   private normalizeDate(value: string | number | Date): Date | null {
     try {
+      if (value as unknown as Date) {
+        return value as unknown as Date;
+      }
       if (value instanceof Date) {
         const t = value.getTime();
         return Number.isFinite(t) ? value : null;
@@ -381,7 +384,6 @@ export class ExternalAttendanceSyncService
       1,
       parseInt(process.env.ATT_SYNC_BULK_SIZE || '500', 10) || 500,
     );
-
     for (let i = 0; i < devices.length; i++) {
       const dev = devices[i];
       let attempted = false;
@@ -539,7 +541,7 @@ export class ExternalAttendanceSyncService
               ]),
             );
             const attendanceTime = this.normalizeDate(
-              this.pickFirst(item, [
+              this.pickFirst(item as unknown as Date, [
                 'attendanceTime',
                 'timestamp',
                 'time',
@@ -548,7 +550,7 @@ export class ExternalAttendanceSyncService
                 'checkTime',
                 'attTime',
                 'punch_time',
-              ]) as any,
+              ]) as unknown as Date,
             );
             if (!Number.isFinite(machine as any)) skippedInvalidMachine++;
             else if (!Number.isFinite(userId as any)) {
