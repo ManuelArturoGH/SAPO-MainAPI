@@ -11,7 +11,7 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.CORS_ORIGIN
       ? process.env.CORS_ORIGIN
-      : 'sapo-web-app.test-apis-web-app.cloud',
+      : 'https://sapo-web-app.test-apis-web-app.cloud',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization, Cookie',
     credentials: true,
