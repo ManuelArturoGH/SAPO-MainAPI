@@ -9,7 +9,9 @@ config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN : '*',
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN
+      : 'sapo-web-app.test-apis-web-app.cloud',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization, Cookie',
     credentials: true,
