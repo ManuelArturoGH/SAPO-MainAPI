@@ -68,10 +68,19 @@ export class AttendancesRepository implements AttendanceRepository {
     const col = this.getCollection(db);
     const now = new Date();
     const ops = atts.map((att) => {
+      const dated = new Date(att.attendanceTime);
+      const correctedDate = new Date(
+        dated.getFullYear(),
+        dated.getMonth(),
+        dated.getDate(),
+        dated.getHours() - 6,
+        dated.getMinutes(),
+        dated.getSeconds(),
+      );
       const filter = {
         attendanceMachineID: att.attendanceMachineID,
         userId: att.userId,
-        attendanceTime: att.attendanceTime,
+        attendanceTime: correctedDate,
       } as const;
       return {
         updateOne: {
